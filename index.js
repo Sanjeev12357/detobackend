@@ -30,6 +30,13 @@ app.use('/',requestRouter);
 app.use("/", userRouter);
 
 
+
+app.get("/", (req, res) => {
+	return res.json({
+		success:true,
+		message:'Your server is up and running....'
+	});
+});
   app.listen(3000, () => {
       console.log("Server is successfully listening on port 3000...");
     });
