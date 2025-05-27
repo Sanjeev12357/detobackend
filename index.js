@@ -4,15 +4,25 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-
-
+const allowedOrigins = [
+  "https://hinge-clone-indol.vercel.app",
+  "http://localhost:5173"
+];
 
 app.use(
   cors({
-    origin: ["https://hinge-clone-indol.vercel.app/","http://localhost:5173"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
 
