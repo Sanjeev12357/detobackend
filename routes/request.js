@@ -13,6 +13,7 @@ try{
     const toUser=req.params.toUserId;
     const status=req.params.status;
     //console.log(toUser);
+    console.log(status);
 
     const allowedStatus=["ignored","interested"];
     if(!allowedStatus.includes(status)){
