@@ -67,8 +67,12 @@ router.post("/payment/webhook",async(req,res)=>{
         //update the user as premium
         // return succes response to razorpay
         const user=await User.findOne({_id:payment.userId})
+        if(!user){
+            return res.status(404).json({message:"User not found"});
+        }
         user.isPremium=true;
         await user.save();
+        console.log("User is now premium");
         // if(req.body.event === "payment.captured"){
 
 
