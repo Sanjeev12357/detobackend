@@ -14,7 +14,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -25,33 +24,34 @@ app.use(
   })
 );
 
+// IMPORTANT: Add raw body parser BEFORE JSON parser for webhook route
+app.use('/webhook', express.raw({ type: 'application/json' }));
+
+// Regular JSON parser for other routes
 app.use(express.json());
 app.use(cookieParser());
 
-connectDB()
- 
+connectDB();
+
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
-
 const userRouter = require("./routes/user");
 const requestRouter = require("./routes/request");
 const paymentRouter = require("./routes/payment");
-const { userAuth } = require("./middlewares/auth");
+
 app.use("/", authRouter);
 app.use("/", profileRouter);
-app.use('/',requestRouter);
+app.use('/', requestRouter);
 app.use("/", userRouter);
-app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
-app.use("/",paymentRouter);
-
-
+app.use("/", paymentRouter);
 
 app.get("/", (req, res) => {
-	return res.json({
-		success:true,
-		message:'Your server is up and running on port 3000'
-	});
+  return res.json({
+    success: true,
+    message: 'Your server is up and running on port 3000'
+  });
 });
-  app.listen(3000, () => {
-      console.log("Server is successfully listening on port 3000...");
-    });
+
+app.listen(3000, () => {
+  console.log("Server is successfully listening on port 3000...");
+});

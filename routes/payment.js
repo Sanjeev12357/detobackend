@@ -11,22 +11,19 @@ const {
 
 paymentRouter.post("/payment/create", userAuth, async (req, res) => {
   try {
-    
     const { firstName, lastName, emailId } = req.user;
 
     const order = await razorpayInstance.orders.create({
-      amount: 700* 100,
+      amount: 700 * 100,
       currency: "INR",
       receipt: "receipt#1",
       notes: {
         firstName,
         lastName,
         emailId,
-        
       },
     });
 
-    // Save it in my database
     console.log(order);
 
     const payment = new Payment({
@@ -40,58 +37,68 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
     });
 
     const savedPayment = await payment.save();
-
-    // Return back my order details to frontend
     res.json({ ...savedPayment.toJSON() });
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
 });
 
-paymentRouter.post("/api/payment/webhook", async (req, res) => {
+// Fixed webhook route - just "/webhook"
+paymentRouter.post("/webhook", async (req, res) => {
   try {
     console.log("Webhook Called");
+    console.log("Request body:", req.body);
+    console.log("Request headers:", req.headers);
+    
     const webhookSignature = req.get("X-Razorpay-Signature");
     console.log("Webhook Signature", webhookSignature);
 
+    if (!webhookSignature) {
+      return res.status(400).json({ msg: "No webhook signature" });
+    }
+
+    // Convert buffer to string since we're using raw body parser
+    const bodyString = req.body.toString();
+    
     const isWebhookValid = validateWebhookSignature(
-      JSON.stringify(req.body),
+      bodyString,
       webhookSignature,
-      "Sanju@123"
+      "Sanju@123" // Make sure this matches your Razorpay webhook secret
     );
 
     if (!isWebhookValid) {
-      console.log("INvalid Webhook Signature");
+      console.log("Invalid Webhook Signature");
       return res.status(400).json({ msg: "Webhook signature is invalid" });
     }
+    
     console.log("Valid Webhook Signature");
 
-    // Udpate my payment Status in DB
-    const paymentDetails = req.body.payload.payment.entity;
+    // Parse JSON after validation
+    const webhookData = JSON.parse(bodyString);
+    console.log("Webhook event:", webhookData.event);
 
-    const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
-    payment.status = paymentDetails.status;
-    await payment.save();
-    console.log("Payment saved");
+    // Handle only successful payments
+    if (webhookData.event === "payment.captured") {
+      const paymentDetails = webhookData.payload.payment.entity;
 
-    const user = await User.findOne({ _id: payment.userId });
-    user.isPremium = true;
-   
-    console.log("User saved");
+      const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
+      if (payment) {
+        payment.status = paymentDetails.status;
+        await payment.save();
+        console.log("Payment saved");
 
-    await user.save();
-
-    // Update the user as premium
-
-    // if (req.body.event == "payment.captured") {
-    // }
-    // if (req.body.event == "payment.failed") {
-    // }
-
-    // return success response to razorpay
+        const user = await User.findById(payment.userId);
+        if (user) {
+          user.isPremium = true;
+          await user.save();
+          console.log("User marked as premium");
+        }
+      }
+    }
 
     return res.status(200).json({ msg: "Webhook received successfully" });
   } catch (err) {
+    console.error("Webhook error:", err);
     return res.status(500).json({ msg: err.message });
   }
 });
@@ -99,9 +106,6 @@ paymentRouter.post("/api/payment/webhook", async (req, res) => {
 paymentRouter.get("/premium/verify", userAuth, async (req, res) => {
   const user = req.user.toJSON();
   console.log(user);
-  if (user.isPremium) {
-    return res.json({ ...user });
-  }
   return res.json({ ...user });
 });
 
