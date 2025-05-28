@@ -51,7 +51,7 @@ router.post("/payment/create",userAuth,async(req,res)=>{
 
 router.post("/payment/webhook",async(req,res)=>{
     try {
-        const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), req.headers['x-razorpay-signature'], "Sanju@123");
+        const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), req.get('x-razorpay-signature'), "Sanju@123");
 
         if (!isWebhookValid) {
             return res.status(400).json({message:"Invalid Webhook Signature"});
@@ -80,7 +80,13 @@ router.post("/payment/webhook",async(req,res)=>{
         // if(req.body.event=="payment.failed"){
         // }
 
-        return res.status(200).json({message:"Webhook received successfully"});
+        return res.status(200).json({
+    message: "Order created successfully",
+    orderId: payment.orderId,
+    amount: payment.amount,
+    currency: payment.currency,
+    receipt: payment.receipt
+});
     } catch (error) {
         return res.status(500).json({message:"Internal Server Error",error:error.message});
     }
