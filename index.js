@@ -7,7 +7,7 @@ const cors = require("cors");
 const allowedOrigins = [
   "https://hinge-clone-indol.vercel.app",
   "https://hingeclone.onrender.com",
-  "https://dateo.devexpertz.me/",
+  "https://dateo.devexpertz.me",
   "http://localhost:5173"
 ];
 
