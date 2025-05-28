@@ -1,99 +1,108 @@
-const express=require("express");
+const express = require("express");
 const { userAuth } = require("../middlewares/auth");
-const router=express.Router();
-const razorpayInstance=require("../utils/razorpay");
-const Payment=require("../models/payment");
-const { validateWebhookSignature } = require("razorpay/dist/utils/razorpay-utils");
+const paymentRouter = express.Router();
+const razorpayInstance = require("../utils/razorpay");
+const Payment = require("../models/payment");
 const User = require("../models/user");
-router.post("/payment/create",userAuth,async(req,res)=>{
-    try {
-        const {firstName, lastName} = req.user;
-        const order = await razorpayInstance.orders.create({
-            "amount": 70000, // Amount in paise
-            "currency": "INR",
-            "receipt": "receipt#1",
-            "notes":{
-                firstName:firstName,
-                lastName:lastName,
-                emailId:req.user.emailId,
-                memebershipType:"silver"
-            }
-        })
 
-        // save it in my databse
+const {
+  validateWebhookSignature,
+} = require("razorpay/dist/utils/razorpay-utils");
 
-        const payment=new Payment({
-            orderId:order.id,
-            amount:70000,
-            currency:order.currency,
-            status:order.status,
-            paymentId:order.id,
-            receipt:order.receipt,
-            userId:req.user._id,
-            notes:order.notes
-        })
+paymentRouter.post("/payment/create", userAuth, async (req, res) => {
+  try {
+    
+    const { firstName, lastName, emailId } = req.user;
 
-        const savedPayment=await payment.save();
-        if(!savedPayment){
-            return res.status(500).json({message:"Internal Server Error"});
-        }
+    const order = await razorpayInstance.orders.create({
+      amount: 700* 100,
+      currency: "INR",
+      receipt: "receipt#1",
+      notes: {
+        firstName,
+        lastName,
+        emailId,
+        
+      },
+    });
 
-        //return backe my order details to frontned
+    // Save it in my database
+    console.log(order);
 
+    const payment = new Payment({
+      userId: req.user._id,
+      orderId: order.id,
+      status: order.status,
+      amount: order.amount,
+      currency: order.currency,
+      receipt: order.receipt,
+      notes: order.notes,
+    });
 
-        res.json({...savedPayment.toJSON()});
-    } catch (error) {
-        return res.status(500).json({message:"Internal Server Error",error:error.message}); 
-    }
-})
+    const savedPayment = await payment.save();
 
-// verify the webhook signature
-
-router.post("/payment/webhook",async(req,res)=>{
-    try {
-        const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), req.get('X-Razorpay-Signature'), "Sanju@123");
-
-        if (!isWebhookValid) {
-            return res.status(400).json({message:"Invalid Webhook Signature"});
-        }
-        console.log(webhookSignature);
-        //update my payment status in db
-        const paymentDetails = req.body.payload.payment.entity;
-        const payment=await Payment.findOne({orderId:paymentDetails.order_id});
-        if(!payment){
-            return res.status(404).json({message:"Payment not found"});
-        }
-        payment.status = paymentDetails.status;
-        await payment.save();
-        //update the user as premium
-        // return succes response to razorpay
-        const user=await User.findOne({_id:payment.userId})
-        if(!user){
-            return res.status(404).json({message:"User not found"});
-        }
-        user.isPremium=true;
-        await user.save();
-        console.log("User is now premium");
-        // if(req.body.event === "payment.captured"){
-
-
-        // }
-        // if(req.body.event=="payment.failed"){
-        // }
-
-        return res.status(200).json({
-    message: "Order created successfully",
-    orderId: payment.orderId,
-    amount: payment.amount,
-    currency: payment.currency,
-    receipt: payment.receipt
+    // Return back my order details to frontend
+    res.json({ ...savedPayment.toJSON() });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
 });
-    } catch (error) {
-        return res.status(500).json({message:"Internal Server Error",error:error.message});
+
+paymentRouter.post("/payment/webhook", async (req, res) => {
+  try {
+    console.log("Webhook Called");
+    const webhookSignature = req.get("X-Razorpay-Signature");
+    console.log("Webhook Signature", webhookSignature);
+
+    const isWebhookValid = validateWebhookSignature(
+      JSON.stringify(req.body),
+      webhookSignature,
+      "Sanju@123"
+    );
+
+    if (!isWebhookValid) {
+      console.log("INvalid Webhook Signature");
+      return res.status(400).json({ msg: "Webhook signature is invalid" });
     }
-})
+    console.log("Valid Webhook Signature");
 
+    // Udpate my payment Status in DB
+    const paymentDetails = req.body.payload.payment.entity;
 
+    const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
+    payment.status = paymentDetails.status;
+    await payment.save();
+    console.log("Payment saved");
 
+    const user = await User.findOne({ _id: payment.userId });
+    user.isPremium = true;
+   
+    console.log("User saved");
 
-module.exports=router;
+    await user.save();
+
+    // Update the user as premium
+
+    // if (req.body.event == "payment.captured") {
+    // }
+    // if (req.body.event == "payment.failed") {
+    // }
+
+    // return success response to razorpay
+
+    return res.status(200).json({ msg: "Webhook received successfully" });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+});
+
+paymentRouter.get("/premium/verify", userAuth, async (req, res) => {
+  const user = req.user.toJSON();
+  console.log(user);
+  if (user.isPremium) {
+    return res.json({ ...user });
+  }
+  return res.json({ ...user });
+});
+
+module.exports = paymentRouter;

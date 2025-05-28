@@ -21,7 +21,7 @@ const paymentSchema=new mongoose.Schema({
     },
     status: {
         type: String,
-        default: "created"
+       
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
