@@ -43,11 +43,12 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
   }
 });
 
+
 // Fixed webhook route - just "/webhook"
 paymentRouter.post("/webhook", async (req, res) => {
     console.log("Webhook route hit");
   // IMPORTANT: Use express.raw() middleware for this route
-  
+
   try {
     console.log("Webhook Called");
     console.log("Request body:", req.body);

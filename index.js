@@ -30,6 +30,10 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 // Regular JSON parser for other routes
 app.use(express.json());
 app.use(cookieParser());
+app.all("*", (req, res, next) => {
+  console.log(`[ALL] ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 connectDB();
 
