@@ -3,7 +3,8 @@ const connectDB = require("./config/database");
 const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-
+const http=require("http");
+const initializeSocket=require("./utils/socket");
 const allowedOrigins = [
   "https://hinge-clone-indol.vercel.app",
   "https://hingeclone.onrender.com",
@@ -49,6 +50,11 @@ app.use('/', requestRouter);
 app.use("/", userRouter);
 app.use("/", paymentRouter);
 
+const server = http.createServer(app);
+initializeSocket(server);
+
+
+
 app.get("/", (req, res) => {
   return res.json({
     success: true,
@@ -56,6 +62,6 @@ app.get("/", (req, res) => {
   });
 });
 
-app.listen(3000, () => {
+server.listen(3000, () => {
   console.log("Server is successfully listening on port 3000...");
 });
