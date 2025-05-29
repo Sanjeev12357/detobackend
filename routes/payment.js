@@ -14,7 +14,7 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
     const { firstName, lastName, emailId } = req.user;
 
     const order = await razorpayInstance.orders.create({
-      amount: 700 * 100,
+      amount: 800 * 100,
       currency: "INR",
       receipt: "receipt#1",
       notes: {
@@ -45,6 +45,9 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
 
 // Fixed webhook route - just "/webhook"
 paymentRouter.post("/webhook", async (req, res) => {
+    console.log("Webhook route hit");
+  // IMPORTANT: Use express.raw() middleware for this route
+  
   try {
     console.log("Webhook Called");
     console.log("Request body:", req.body);
