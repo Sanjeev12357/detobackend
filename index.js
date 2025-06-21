@@ -9,6 +9,7 @@ const allowedOrigins = [
   "https://hinge-clone-indol.vercel.app",
   "https://hingeclone.onrender.com",
   "https://dateo.devexpertz.me",
+  "https://luvshuv.devexpertz.me/",
   "http://localhost:5173"
 ];
 
