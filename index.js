@@ -24,6 +24,8 @@ app.use(
     credentials: true,
   })
 );
+require('dotenv').config(); // Load environment variables
+
 
 // IMPORTANT: Add raw body parser BEFORE JSON parser for webhook route
 app.use('/webhook', express.raw({ type: 'application/json' }));
@@ -44,7 +46,9 @@ const userRouter = require("./routes/user");
 const requestRouter = require("./routes/request");
 const paymentRouter = require("./routes/payment");
 const chatRouter= require("./routes/chat");
+const uploadRouter = require("./routes/upload");
 
+app.use("/upload", uploadRouter);
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use('/', requestRouter);
